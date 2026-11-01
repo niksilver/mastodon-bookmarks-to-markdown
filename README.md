@@ -32,7 +32,10 @@ You need [uv](https://docs.astral.sh/uv/).
 uv run python bookmarks.py
 ```
 
-Each bookmark is written to `<output_dir>/<status id>.md`. Running it again
+Each bookmark is written to `<output_dir>/YYYYMMDD-TEXT-ID.md`, where the date
+is when the toot was posted (UTC), TEXT is the first 12 characters of the toot
+with anything other than ASCII letters and digits turned into `_`, and ID is the
+toot's id. For example, `20261030-Hello___welc-112233.md`. Running it again
 overwrites existing files.
 
 Attachments are saved to `<attachments_dir>/<status id>-<attachment id>.<ext>`.

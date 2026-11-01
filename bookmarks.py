@@ -95,12 +95,35 @@ def status_to_markdown(status: dict) -> str:
     return f"{front_matter}\n\n{body}\n"
 
 
+def bookmark_filename(status: dict) -> str:
+    """
+    Generate the markdown filename for a status.
+
+    The format is `YYYYMMDD-TEXT-ID.md`, where the date is the day the status
+    was created (UTC), TEXT is the first 12 characters of its plain text with
+    every character other than ASCII letters and digits turned into `_`, and ID
+    is the status id.
+
+    ## Parameters
+
+    - `status`: A Mastodon status dict with keys: id, created_at, content
+
+    ## Returns
+
+    The filename, e.g. `20261030-Hello___welc-112233.md`
+    """
+    date = status["created_at"][:10].replace("-", "")
+    text = re.sub(r"[^A-Za-z0-9]", "_", html_to_text(status["content"])[:12])
+    return f"{date}-{text}-{status['id']}.md"
+
+
 def save_bookmarks(statuses: list[dict], output_dir) -> None:
     """
     Save Mastodon statuses as markdown files.
 
-    Writes one markdown file per status to the specified directory. Creates the
-    directory if it does not exist. Overwrites existing files.
+    Writes one markdown file per status to the specified directory, named by
+    `bookmark_filename`. Creates the directory if it does not exist. Overwrites
+    existing files.
 
     ## Parameters
 
@@ -116,7 +139,7 @@ def save_bookmarks(statuses: list[dict], output_dir) -> None:
     logger.info("Writing %d bookmarks to %s", len(statuses), output_path)
 
     for status in statuses:
-        file_path = output_path / f"{status['id']}.md"
+        file_path = output_path / bookmark_filename(status)
         file_path.write_text(status_to_markdown(status), encoding = "utf-8")
 
 

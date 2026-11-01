@@ -259,6 +259,59 @@ def test_attachment_filename_without_extension():
     assert result == "112233-998877"
 
 
+def test_bookmark_filename_uses_date_text_and_id():
+    """
+    Test that the filename is YYYYMMDD-TEXT-ID.md, with the first 12 characters
+    of text and non-alphanumerics turned into underscores.
+
+    ## Returns
+
+    None
+    """
+    status = _make_status("112233")
+
+    assert bookmarks.bookmark_filename(status) == "20261030-Hello___welc-112233.md"
+
+
+def test_bookmark_filename_with_short_text():
+    """
+    Test that text shorter than 12 characters is used in full.
+
+    ## Returns
+
+    None
+    """
+    status = _make_status("112233") | {"content": "<p>Hi!</p>"}
+
+    assert bookmarks.bookmark_filename(status) == "20261030-Hi_-112233.md"
+
+
+def test_bookmark_filename_replaces_non_ascii():
+    """
+    Test that non-ASCII letters are turned into underscores.
+
+    ## Returns
+
+    None
+    """
+    status = _make_status("112233") | {"content": "<p>Caf\u00e9 ol\u00e9!</p>"}
+
+    assert bookmarks.bookmark_filename(status) == "20261030-Caf__ol__-112233.md"
+
+
+def test_bookmark_filename_with_no_text():
+    """
+    Test that a toot with no text gets an empty TEXT part.
+
+    ## Returns
+
+    None
+    """
+    status = _make_status("112233") | {"content": ""}
+
+    assert bookmarks.bookmark_filename(status) == "20261030--112233.md"
+
+
 def test_save_bookmarks_writes_one_file_per_status(tmp_path):
     """
     Test that save_bookmarks writes one markdown file per status.
@@ -277,12 +330,12 @@ def test_save_bookmarks_writes_one_file_per_status(tmp_path):
 
     bookmarks.save_bookmarks([status1, status2], output_dir)
 
-    assert (output_dir / "1.md").exists()
-    assert (output_dir / "2.md").exists()
+    assert (output_dir / "20261030-Hello___welc-1.md").exists()
+    assert (output_dir / "20261030-Hello___welc-2.md").exists()
     expected1 = bookmarks.status_to_markdown(status1)
     expected2 = bookmarks.status_to_markdown(status2)
-    assert (output_dir / "1.md").read_text(encoding = "utf-8") == expected1
-    assert (output_dir / "2.md").read_text(encoding = "utf-8") == expected2
+    assert (output_dir / "20261030-Hello___welc-1.md").read_text(encoding = "utf-8") == expected1
+    assert (output_dir / "20261030-Hello___welc-2.md").read_text(encoding = "utf-8") == expected2
 
 
 def test_save_bookmarks_overwrites_existing(tmp_path):
@@ -299,13 +352,13 @@ def test_save_bookmarks_overwrites_existing(tmp_path):
     """
     output_dir = tmp_path / "out"
     output_dir.mkdir()
-    (output_dir / "1.md").write_text("old")
+    (output_dir / "20261030-Hello___welc-1.md").write_text("old")
 
     status = _make_status("1")
     bookmarks.save_bookmarks([status], output_dir)
 
     expected = bookmarks.status_to_markdown(status)
-    assert (output_dir / "1.md").read_text(encoding = "utf-8") == expected
+    assert (output_dir / "20261030-Hello___welc-1.md").read_text(encoding = "utf-8") == expected
 
 
 class FakeResponse:
