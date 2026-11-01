@@ -36,7 +36,9 @@ Each bookmark is written to `<output_dir>/<status id>.md`. Running it again
 overwrites existing files.
 
 Attachments are saved to `<attachments_dir>/<status id>-<attachment id>.<ext>`.
-Attachments that have already been downloaded are skipped.
+Attachments that have already been downloaded are skipped. If an attachment
+fails to download, a warning is logged and the script carries on; run it again
+later to retry.
 
 ## Test
 

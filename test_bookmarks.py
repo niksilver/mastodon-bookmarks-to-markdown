@@ -547,28 +547,35 @@ def test_save_attachments_skips_attachment_without_url(tmp_path, monkeypatch):
     assert calls == []
 
 
-def test_save_attachments_raises_on_http_error(tmp_path, monkeypatch):
+def test_save_attachments_continues_after_http_error(tmp_path, monkeypatch, caplog):
     """
-    Test that save_attachments raises when the download is an HTTP error.
+    Test that a failed download is logged as a warning and later ones still happen.
 
     ## Parameters
 
     - `tmp_path`: pytest temporary directory fixture
     - `monkeypatch`: pytest monkeypatch fixture
+    - `caplog`: pytest log capture fixture
 
     ## Returns
 
     None
     """
     attachments_dir = tmp_path / "att"
-    attachment      = {"id": "1", "url": "https://files.example.social/a.png"}
-    status          = _make_status("112233") | {"media_attachments": [attachment]}
+    broken          = {"id": "1", "url": "https://example.social/media_proxy/1/original"}
+    working         = {"id": "2", "url": "https://files.example.social/b.png"}
+    status          = _make_status("112233") | {"media_attachments": [broken, working]}
 
-    failure = FakeResponse([], error = requests.HTTPError("404"))
-    _install_fake_get(monkeypatch, [failure])
+    failure = FakeResponse([], error = requests.HTTPError("500 Server Error"))
+    success = FakeResponse([], content = b"PNG")
+    _install_fake_get(monkeypatch, [failure, success])
 
-    with pytest.raises(requests.HTTPError):
-        bookmarks.save_attachments([status], attachments_dir)
+    bookmarks.save_attachments([status], attachments_dir)
+
+    assert not (attachments_dir / "112233-1").exists()
+    assert (attachments_dir / "112233-2.png").read_bytes() == b"PNG"
+    assert "Failed to download https://example.social/media_proxy/1/original" in caplog.text
+    assert "500 Server Error" in caplog.text
 
 
 def test_fetch_bookmarks_logs_each_page(monkeypatch, caplog):

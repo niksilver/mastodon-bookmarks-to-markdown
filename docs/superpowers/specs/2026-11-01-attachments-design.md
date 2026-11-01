@@ -61,14 +61,19 @@ exactly as before. The file still ends with a single trailing newline.
   - Otherwise, `requests.get(url)` without any `Authorization` header (media
     is public, and the token must not be sent to media hosts), call
     `raise_for_status()`, and write `response.content` to the file.
+  - If the request fails (`requests.RequestException`), log a warning with the
+    URL and error, and move on to the next attachment.
 
 `main` calls `save_attachments(statuses, config["attachments_dir"])` before
-`save_bookmarks`, so a failed download (or a missing config key) stops the
-script before any markdown embeds point at missing files.
+`save_bookmarks`, so a missing config key stops the script before any markdown
+is written.
 
 ## Error handling
 
-As before: a failed download raises and stops the script.
+A failed attachment download is logged and skipped (real instances return
+500s for some remote media via `/media_proxy/`). The toot's embed is still
+written, so it points at a missing file until a later run succeeds. Other
+errors stop the script as before.
 
 ## Testing
 
@@ -82,7 +87,8 @@ In `test_bookmarks.py`:
 - `save_attachments`, with `requests.get` faked as in the fetch tests:
   writes the downloaded bytes to the right filename in a new directory, skips
   an existing file without calling `get`, skips attachments without a `url`,
-  sends no `Authorization` header, and raises on an HTTP error.
+  sends no `Authorization` header, and on an HTTP error logs a warning and
+  carries on with the next attachment.
 
 Real Mastodon statuses always include `media_attachments` (possibly empty),
 so the code may read `status["media_attachments"]` directly. Existing test

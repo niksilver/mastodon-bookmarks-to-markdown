@@ -125,8 +125,9 @@ def save_attachments(statuses: list[dict], attachments_dir) -> None:
     Download the media attachments of Mastodon statuses.
 
     Creates the directory if it does not exist. Skips attachments without a url
-    and files that have already been downloaded. No headers are sent, so the
-    access token is never exposed to media hosts.
+    and files that have already been downloaded. A failed download is logged as
+    a warning and skipped, so one broken attachment doesn't stop the rest. No
+    headers are sent, so the access token is never exposed to media hosts.
 
     ## Parameters
 
@@ -136,10 +137,6 @@ def save_attachments(statuses: list[dict], attachments_dir) -> None:
     ## Returns
 
     None
-
-    ## Raises
-
-    - `requests.HTTPError`: If any download returns an HTTP error status
     """
     directory = pathlib.Path(attachments_dir)
     directory.mkdir(parents = True, exist_ok = True)
@@ -159,8 +156,13 @@ def save_attachments(statuses: list[dict], attachments_dir) -> None:
                 continue
 
             logger.info("Downloading %s to %s", attachment["url"], path)
-            response = requests.get(attachment["url"])
-            response.raise_for_status()
+            try:
+                response = requests.get(attachment["url"])
+                response.raise_for_status()
+            except requests.RequestException as error:
+                logger.warning("Failed to download %s: %s", attachment["url"], error)
+                continue
+
             path.write_bytes(response.content)
 
 
