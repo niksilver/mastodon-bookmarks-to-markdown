@@ -17,11 +17,12 @@ def _make_status(status_id):
     A status dict with all required keys
     """
     return {
-        "id":         status_id,
-        "created_at": "2026-10-30T14:02:00Z",
-        "url":        f"https://example.social/@alice/{status_id}",
-        "account":    {"acct": "alice@example.social"},
-        "content":    "<p>Hello &amp; welcome</p>",
+        "id":                status_id,
+        "created_at":        "2026-10-30T14:02:00Z",
+        "url":               f"https://example.social/@alice/{status_id}",
+        "account":           {"acct": "alice@example.social"},
+        "content":           "<p>Hello &amp; welcome</p>",
+        "media_attachments": [],
     }
 
 
@@ -124,11 +125,12 @@ def test_status_to_markdown():
     None
     """
     status = {
-        "id":         "112233",
-        "created_at": "2026-10-30T14:02:00Z",
-        "url":        "https://example.social/@alice/112233",
-        "account":    {"acct": "alice@example.social"},
-        "content":    "<p>Hello &amp; welcome</p>",
+        "id":                "112233",
+        "created_at":        "2026-10-30T14:02:00Z",
+        "url":               "https://example.social/@alice/112233",
+        "account":           {"acct": "alice@example.social"},
+        "content":           "<p>Hello &amp; welcome</p>",
+        "media_attachments": [],
     }
 
     result = bookmarks.status_to_markdown(status)
@@ -142,6 +144,120 @@ def test_status_to_markdown():
                 'Hello & welcome\n'
                 )
     assert result == expected
+
+
+def test_status_to_markdown_embeds_attachment():
+    """
+    Test that an attachment is embedded as an Obsidian link after the text.
+
+    ## Returns
+
+    None
+    """
+    status     = _make_status("112233")
+    attachment = {"id": "1", "url": "https://files.example.social/a.png"}
+    status["media_attachments"] = [attachment]
+
+    result = bookmarks.status_to_markdown(status)
+
+    expected = ('---\n'
+                'author: "@alice@example.social"\n'
+                'date: 2026-10-30T14:02:00Z\n'
+                'url: https://example.social/@alice/112233\n'
+                '---\n'
+                '\n'
+                'Hello & welcome\n'
+                '\n'
+                '![[112233-1.png]]\n'
+                )
+    assert result == expected
+
+
+def test_status_to_markdown_embeds_attachments_in_order():
+    """
+    Test that multiple attachments are embedded in their original order.
+
+    ## Returns
+
+    None
+    """
+    status = _make_status("112233")
+    first  = {"id": "1", "url": "https://files.example.social/a.png"}
+    second = {"id": "2", "url": "https://files.example.social/b.mp4"}
+    status["media_attachments"] = [first, second]
+
+    result = bookmarks.status_to_markdown(status)
+
+    expected = ('---\n'
+                'author: "@alice@example.social"\n'
+                'date: 2026-10-30T14:02:00Z\n'
+                'url: https://example.social/@alice/112233\n'
+                '---\n'
+                '\n'
+                'Hello & welcome\n'
+                '\n'
+                '![[112233-1.png]]\n'
+                '\n'
+                '![[112233-2.mp4]]\n'
+                )
+    assert result == expected
+
+
+def test_status_to_markdown_skips_attachment_without_url():
+    """
+    Test that an attachment with no url is not embedded.
+
+    ## Returns
+
+    None
+    """
+    status     = _make_status("112233")
+    attachment = {"id": "1", "url": None}
+    status["media_attachments"] = [attachment]
+
+    result = bookmarks.status_to_markdown(status)
+
+    expected = ('---\n'
+                'author: "@alice@example.social"\n'
+                'date: 2026-10-30T14:02:00Z\n'
+                'url: https://example.social/@alice/112233\n'
+                '---\n'
+                '\n'
+                'Hello & welcome\n'
+                )
+    assert result == expected
+
+
+def test_attachment_filename_uses_ids_and_extension():
+    """
+    Test that attachment_filename returns status_id-attachment_id with extension.
+
+    ## Returns
+
+    None
+    """
+    attachment = {
+        "id":  "998877",
+        "url": "https://files.example.social/media/abc/original/f00.png",
+    }
+    result = bookmarks.attachment_filename("112233", attachment)
+    assert result == "112233-998877.png"
+
+
+def test_attachment_filename_without_extension():
+    """
+    Test that attachment_filename handles URLs without file extensions.
+
+    ## Returns
+
+    None
+    """
+    attachment = {
+        "id":  "998877",
+        "url": "https://files.example.social/media/abc",
+    }
+    result = bookmarks.attachment_filename("112233", attachment)
+    assert result == "112233-998877"
 
 
 def test_save_bookmarks_writes_one_file_per_status(tmp_path):
@@ -198,7 +314,7 @@ class FakeResponse:
     A minimal stand-in for a `requests.Response`.
     """
 
-    def __init__(self, statuses, links = None, error = None):
+    def __init__(self, statuses, links = None, error = None, content = b""):
         """
         Create a fake response.
 
@@ -207,6 +323,7 @@ class FakeResponse:
         - `statuses`: List of status dicts returned by `json()`
         - `links`: Dict of parsed Link headers, e.g. `{"next": {"url": "..."}}`
         - `error`: Optional exception raised by `raise_for_status()`
+        - `content`: Bytes available as the `content` attribute
 
         ## Returns
 
@@ -215,6 +332,7 @@ class FakeResponse:
         self.statuses = statuses
         self.links    = links if links is not None else {}
         self.error    = error
+        self.content  = content
 
 
     def json(self):
@@ -255,7 +373,7 @@ def _install_fake_get(monkeypatch, responses):
     """
     calls = []
 
-    def fake_get(url, headers):
+    def fake_get(url, headers = None):
         calls.append((url, headers))
         return responses.pop(0)
 
@@ -327,3 +445,128 @@ def test_fetch_bookmarks_raises_on_http_error(monkeypatch):
 
     with pytest.raises(requests.HTTPError):
         bookmarks.fetch_bookmarks("https://example.social", "tok")
+
+
+def test_save_attachments_writes_file(tmp_path, monkeypatch):
+    """
+    Test that save_attachments downloads an attachment to the directory.
+
+    ## Parameters
+
+    - `tmp_path`: pytest temporary directory fixture
+    - `monkeypatch`: pytest monkeypatch fixture
+
+    ## Returns
+
+    None
+    """
+    attachments_dir = tmp_path / "att"
+    attachment      = {"id": "1", "url": "https://files.example.social/a.png"}
+    status          = _make_status("112233")
+    status["media_attachments"] = [attachment]
+    calls = _install_fake_get(monkeypatch, [FakeResponse([], content = b"PNG")])
+
+    bookmarks.save_attachments([status], attachments_dir)
+
+    assert (attachments_dir / "112233-1.png").read_bytes() == b"PNG"
+    assert len(calls) == 1
+    assert calls[0][0] == "https://files.example.social/a.png"
+
+
+def test_save_attachments_sends_no_auth_header(tmp_path, monkeypatch):
+    """
+    Test that save_attachments sends no headers, so the token is never leaked.
+
+    ## Parameters
+
+    - `tmp_path`: pytest temporary directory fixture
+    - `monkeypatch`: pytest monkeypatch fixture
+
+    ## Returns
+
+    None
+    """
+    attachments_dir = tmp_path / "att"
+    attachment      = {"id": "1", "url": "https://files.example.social/a.png"}
+    status          = _make_status("112233")
+    status["media_attachments"] = [attachment]
+    calls = _install_fake_get(monkeypatch, [FakeResponse([], content = b"PNG")])
+
+    bookmarks.save_attachments([status], attachments_dir)
+
+    assert calls[0][1] is None
+
+
+def test_save_attachments_skips_existing_file(tmp_path, monkeypatch):
+    """
+    Test that save_attachments does not download a file that already exists.
+
+    ## Parameters
+
+    - `tmp_path`: pytest temporary directory fixture
+    - `monkeypatch`: pytest monkeypatch fixture
+
+    ## Returns
+
+    None
+    """
+    attachments_dir = tmp_path / "att"
+    attachments_dir.mkdir()
+    (attachments_dir / "112233-1.png").write_bytes(b"old")
+    attachment = {"id": "1", "url": "https://files.example.social/a.png"}
+    status     = _make_status("112233")
+    status["media_attachments"] = [attachment]
+    calls = _install_fake_get(monkeypatch, [])
+
+    bookmarks.save_attachments([status], attachments_dir)
+
+    assert calls == []
+    assert (attachments_dir / "112233-1.png").read_bytes() == b"old"
+
+
+def test_save_attachments_skips_attachment_without_url(tmp_path, monkeypatch):
+    """
+    Test that save_attachments ignores an attachment with no url.
+
+    ## Parameters
+
+    - `tmp_path`: pytest temporary directory fixture
+    - `monkeypatch`: pytest monkeypatch fixture
+
+    ## Returns
+
+    None
+    """
+    attachments_dir = tmp_path / "att"
+    attachment      = {"id": "1", "url": None}
+    status          = _make_status("112233")
+    status["media_attachments"] = [attachment]
+    calls = _install_fake_get(monkeypatch, [])
+
+    bookmarks.save_attachments([status], attachments_dir)
+
+    assert calls == []
+
+
+def test_save_attachments_raises_on_http_error(tmp_path, monkeypatch):
+    """
+    Test that save_attachments raises when the download is an HTTP error.
+
+    ## Parameters
+
+    - `tmp_path`: pytest temporary directory fixture
+    - `monkeypatch`: pytest monkeypatch fixture
+
+    ## Returns
+
+    None
+    """
+    attachments_dir = tmp_path / "att"
+    attachment      = {"id": "1", "url": "https://files.example.social/a.png"}
+    status          = _make_status("112233")
+    status["media_attachments"] = [attachment]
+    failure = FakeResponse([], error = requests.HTTPError("404"))
+    _install_fake_get(monkeypatch, [failure])
+
+    with pytest.raises(requests.HTTPError):
+        bookmarks.save_attachments([status], attachments_dir)
