@@ -1,4 +1,5 @@
-instance_url    = "https://example.social"
-access_token    = "your-token-with-read:bookmarks-scope"
-output_dir      = "bookmarks"
-attachments_dir = "bookmarks/attachments"
+instance_url      = "https://example.social"
+access_token      = "your-token-with-read:bookmarks-scope"
+output_dir        = "bookmarks"
+attachments_dir   = "bookmarks/attachments"
+toot_max_days_ago = 0  # only toots posted in the last N days; 0 means all

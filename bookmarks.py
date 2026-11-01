@@ -1,3 +1,4 @@
+import datetime
 import html
 import logging
 import pathlib
@@ -169,7 +170,7 @@ def save_attachments(statuses: list[dict], attachments_dir) -> None:
             if not attachment.get("url"):
                 logger.info("Skipping attachment %s of status %s: no url",
                             attachment["id"],
-                            status["id"]
+                            status["id"],
                             )
                 continue
 
@@ -224,11 +225,40 @@ def fetch_bookmarks(instance_url: str, token: str) -> list[dict]:
     return results
 
 
+def filter_recent(statuses: list[dict],
+                  toot_max_days_ago: int,
+                  now: datetime.datetime,
+                  ) -> list[dict]:
+    """
+    Keep only the statuses posted within the last `toot_max_days_ago` days.
+
+    ## Parameters
+
+    - `statuses`: List of Mastodon status dicts
+    - `toot_max_days_ago`: How many days back to keep; 0 keeps everything
+    - `now`: The current time, timezone-aware
+
+    ## Returns
+
+    The statuses whose `created_at` is no earlier than `toot_max_days_ago` before
+    `now`, in their original order
+    """
+    if toot_max_days_ago == 0:
+        return statuses
+
+    cutoff = now - datetime.timedelta(days = toot_max_days_ago)
+    return [status for status in statuses
+            if datetime.datetime.fromisoformat(status["created_at"]) >= cutoff
+            ]
+
+
 def main() -> None:
     """
     Load Mastodon bookmarks and save them to markdown files.
 
     Loads configuration from config.toml, fetches bookmarks from the instance,
+    keeps those posted within `toot_max_days_ago` days (optional; 0 or missing
+    means all),
     downloads their attachments to the attachments directory, then saves the
     bookmarks to the output directory, both as specified in the config.
     Attachments come first so that no markdown embeds point at missing files.
@@ -239,8 +269,13 @@ def main() -> None:
     """
     logging.basicConfig(level = logging.INFO, format = "%(asctime)s %(message)s")
 
-    config   = load_config("config.toml")
-    statuses = fetch_bookmarks(config["instance_url"], config["access_token"])
+    config            = load_config("config.toml")
+    toot_max_days_ago = config.get("toot_max_days_ago", 0)
+    now               = datetime.datetime.now(datetime.timezone.utc)
+    fetched           = fetch_bookmarks(config["instance_url"], config["access_token"])
+    statuses          = filter_recent(fetched, toot_max_days_ago, now)
+    logger.info("Keeping %d of %d bookmarks", len(statuses), len(fetched))
+
     save_attachments(statuses, config["attachments_dir"])
     save_bookmarks(statuses, config["output_dir"])
 

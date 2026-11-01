@@ -18,11 +18,17 @@ You need [uv](https://docs.astral.sh/uv/).
    ```
 
    ```toml
-   instance_url    = "https://your.instance"
-   access_token    = "your-access-token"
-   output_dir      = "bookmarks"
-   attachments_dir = "bookmarks/attachments"
+   instance_url      = "https://your.instance"
+   access_token      = "your-access-token"
+   output_dir        = "bookmarks"
+   attachments_dir   = "bookmarks/attachments"
+   toot_max_days_ago = 0
    ```
+
+`toot_max_days_ago` limits the export to toots posted within that many days.
+`0`, or leaving it out, means all bookmarks. It goes by when each toot was
+posted, not when you bookmarked it, because Mastodon doesn't record bookmark
+dates. All bookmarks are still fetched before filtering.
 
 `config.toml` is git-ignored, so your token won't be committed.
 

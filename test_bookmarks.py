@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 import pytest
@@ -704,3 +705,33 @@ def test_save_attachments_logs_skips(tmp_path, monkeypatch, caplog):
 
     assert "Skipping 112233-1.png: already downloaded" in caplog.text
     assert "Skipping attachment 2 of status 112233: no url" in caplog.text
+
+
+def test_filter_recent_keeps_everything_when_zero():
+    """
+    Test that a max age of 0 days keeps all statuses.
+
+    ## Returns
+
+    None
+    """
+    now      = datetime.datetime(2026, 11, 1, 12, 0, tzinfo = datetime.timezone.utc)
+    old      = _make_status("1") | {"created_at": "2020-01-01T00:00:00.000Z"}
+    statuses = [old]
+
+    assert bookmarks.filter_recent(statuses, 0, now) == [old]
+
+
+def test_filter_recent_drops_older_statuses():
+    """
+    Test that statuses posted more than the max age ago are dropped.
+
+    ## Returns
+
+    None
+    """
+    now    = datetime.datetime(2026, 11, 1, 12, 0, tzinfo = datetime.timezone.utc)
+    recent = _make_status("1") | {"created_at": "2026-10-30T14:02:00.000Z"}
+    old    = _make_status("2") | {"created_at": "2026-10-01T14:02:00.000Z"}
+
+    assert bookmarks.filter_recent([recent, old], 7, now) == [recent]
