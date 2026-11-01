@@ -1,10 +1,14 @@
 import html
+import logging
 import pathlib
 import re
 import tomllib
 import urllib.parse
 
 import requests
+
+
+logger = logging.getLogger(__name__)
 
 
 def load_config(path) -> dict:
@@ -109,6 +113,7 @@ def save_bookmarks(statuses: list[dict], output_dir) -> None:
     """
     output_path = pathlib.Path(output_dir)
     output_path.mkdir(parents = True, exist_ok = True)
+    logger.info("Writing %d bookmarks to %s", len(statuses), output_path)
 
     for status in statuses:
         file_path = output_path / f"{status['id']}.md"
@@ -142,12 +147,18 @@ def save_attachments(statuses: list[dict], attachments_dir) -> None:
     for status in statuses:
         for attachment in status["media_attachments"]:
             if not attachment.get("url"):
+                logger.info("Skipping attachment %s of status %s: no url",
+                            attachment["id"],
+                            status["id"]
+                            )
                 continue
 
             path = directory / attachment_filename(status["id"], attachment)
             if path.exists():
+                logger.info("Skipping %s: already downloaded", path.name)
                 continue
 
+            logger.info("Downloading %s to %s", attachment["url"], path)
             response = requests.get(attachment["url"])
             response.raise_for_status()
             path.write_bytes(response.content)
@@ -177,9 +188,12 @@ def fetch_bookmarks(instance_url: str, token: str) -> list[dict]:
     results = []
 
     while url:
+        logger.info("Fetching %s", url)
         response = requests.get(url, headers = headers)
         response.raise_for_status()
-        results.extend(response.json())
+        page = response.json()
+        logger.info("Got %d bookmarks", len(page))
+        results.extend(page)
         url = response.links.get("next", {}).get("url")
 
     return results
@@ -198,6 +212,8 @@ def main() -> None:
 
     None
     """
+    logging.basicConfig(level = logging.INFO, format = "%(asctime)s %(message)s")
+
     config   = load_config("config.toml")
     statuses = fetch_bookmarks(config["instance_url"], config["access_token"])
     save_attachments(statuses, config["attachments_dir"])

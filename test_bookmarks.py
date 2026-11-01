@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 import requests
 
@@ -567,3 +569,78 @@ def test_save_attachments_raises_on_http_error(tmp_path, monkeypatch):
 
     with pytest.raises(requests.HTTPError):
         bookmarks.save_attachments([status], attachments_dir)
+
+
+def test_fetch_bookmarks_logs_each_page(monkeypatch, caplog):
+    """
+    Test that fetch_bookmarks logs each page it fetches and how many it got.
+
+    ## Parameters
+
+    - `monkeypatch`: pytest monkeypatch fixture
+    - `caplog`: pytest log capture fixture
+
+    ## Returns
+
+    None
+    """
+    caplog.set_level(logging.INFO)
+    _install_fake_get(monkeypatch, [FakeResponse([{"id": "1"}, {"id": "2"}])])
+
+    bookmarks.fetch_bookmarks("https://example.social", "tok")
+
+    assert "Fetching https://example.social/api/v1/bookmarks" in caplog.text
+    assert "Got 2 bookmarks" in caplog.text
+
+
+def test_save_attachments_logs_download(tmp_path, monkeypatch, caplog):
+    """
+    Test that save_attachments logs each download before making it.
+
+    ## Parameters
+
+    - `tmp_path`: pytest temporary directory fixture
+    - `monkeypatch`: pytest monkeypatch fixture
+    - `caplog`: pytest log capture fixture
+
+    ## Returns
+
+    None
+    """
+    caplog.set_level(logging.INFO)
+    attachment = {"id": "1", "url": "https://files.example.social/a.png"}
+    status     = _make_status("112233") | {"media_attachments": [attachment]}
+
+    _install_fake_get(monkeypatch, [FakeResponse([], content = b"PNG")])
+
+    bookmarks.save_attachments([status], tmp_path)
+
+    assert "Downloading https://files.example.social/a.png" in caplog.text
+
+
+def test_save_attachments_logs_skips(tmp_path, monkeypatch, caplog):
+    """
+    Test that save_attachments logs attachments it skips, and why.
+
+    ## Parameters
+
+    - `tmp_path`: pytest temporary directory fixture
+    - `monkeypatch`: pytest monkeypatch fixture
+    - `caplog`: pytest log capture fixture
+
+    ## Returns
+
+    None
+    """
+    caplog.set_level(logging.INFO)
+    (tmp_path / "112233-1.png").write_bytes(b"old")
+    existing = {"id": "1", "url": "https://files.example.social/a.png"}
+    no_url   = {"id": "2", "url": None}
+    status   = _make_status("112233") | {"media_attachments": [existing, no_url]}
+
+    _install_fake_get(monkeypatch, [])
+
+    bookmarks.save_attachments([status], tmp_path)
+
+    assert "Skipping 112233-1.png: already downloaded" in caplog.text
+    assert "Skipping attachment 2 of status 112233: no url" in caplog.text
