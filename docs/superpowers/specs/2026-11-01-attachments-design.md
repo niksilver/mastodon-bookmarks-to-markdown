@@ -62,8 +62,9 @@ exactly as before. The file still ends with a single trailing newline.
     is public, and the token must not be sent to media hosts), call
     `raise_for_status()`, and write `response.content` to the file.
 
-`main` calls `save_attachments(statuses, config["attachments_dir"])` after
-`save_bookmarks`.
+`main` calls `save_attachments(statuses, config["attachments_dir"])` before
+`save_bookmarks`, so a failed download (or a missing config key) stops the
+script before any markdown embeds point at missing files.
 
 ## Error handling
 

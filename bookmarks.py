@@ -190,8 +190,9 @@ def main() -> None:
     Load Mastodon bookmarks and save them to markdown files.
 
     Loads configuration from config.toml, fetches bookmarks from the instance,
-    saves them to the output directory and downloads their attachments to the
-    attachments directory, both as specified in the config.
+    downloads their attachments to the attachments directory, then saves the
+    bookmarks to the output directory, both as specified in the config.
+    Attachments come first so that no markdown embeds point at missing files.
 
     ## Returns
 
@@ -199,8 +200,8 @@ def main() -> None:
     """
     config   = load_config("config.toml")
     statuses = fetch_bookmarks(config["instance_url"], config["access_token"])
-    save_bookmarks(statuses, config["output_dir"])
     save_attachments(statuses, config["attachments_dir"])
+    save_bookmarks(statuses, config["output_dir"])
 
     print(f"Saved {len(statuses)} bookmarks to {config['output_dir']}")
 

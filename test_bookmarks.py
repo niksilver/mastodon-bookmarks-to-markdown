@@ -154,9 +154,8 @@ def test_status_to_markdown_embeds_attachment():
 
     None
     """
-    status     = _make_status("112233")
     attachment = {"id": "1", "url": "https://files.example.social/a.png"}
-    status["media_attachments"] = [attachment]
+    status     = _make_status("112233") | {"media_attachments": [attachment]}
 
     result = bookmarks.status_to_markdown(status)
 
@@ -181,10 +180,9 @@ def test_status_to_markdown_embeds_attachments_in_order():
 
     None
     """
-    status = _make_status("112233")
     first  = {"id": "1", "url": "https://files.example.social/a.png"}
     second = {"id": "2", "url": "https://files.example.social/b.mp4"}
-    status["media_attachments"] = [first, second]
+    status = _make_status("112233") | {"media_attachments": [first, second]}
 
     result = bookmarks.status_to_markdown(status)
 
@@ -211,9 +209,8 @@ def test_status_to_markdown_skips_attachment_without_url():
 
     None
     """
-    status     = _make_status("112233")
     attachment = {"id": "1", "url": None}
-    status["media_attachments"] = [attachment]
+    status     = _make_status("112233") | {"media_attachments": [attachment]}
 
     result = bookmarks.status_to_markdown(status)
 
@@ -462,8 +459,8 @@ def test_save_attachments_writes_file(tmp_path, monkeypatch):
     """
     attachments_dir = tmp_path / "att"
     attachment      = {"id": "1", "url": "https://files.example.social/a.png"}
-    status          = _make_status("112233")
-    status["media_attachments"] = [attachment]
+    status          = _make_status("112233") | {"media_attachments": [attachment]}
+
     calls = _install_fake_get(monkeypatch, [FakeResponse([], content = b"PNG")])
 
     bookmarks.save_attachments([status], attachments_dir)
@@ -488,8 +485,8 @@ def test_save_attachments_sends_no_auth_header(tmp_path, monkeypatch):
     """
     attachments_dir = tmp_path / "att"
     attachment      = {"id": "1", "url": "https://files.example.social/a.png"}
-    status          = _make_status("112233")
-    status["media_attachments"] = [attachment]
+    status          = _make_status("112233") | {"media_attachments": [attachment]}
+
     calls = _install_fake_get(monkeypatch, [FakeResponse([], content = b"PNG")])
 
     bookmarks.save_attachments([status], attachments_dir)
@@ -514,8 +511,8 @@ def test_save_attachments_skips_existing_file(tmp_path, monkeypatch):
     attachments_dir.mkdir()
     (attachments_dir / "112233-1.png").write_bytes(b"old")
     attachment = {"id": "1", "url": "https://files.example.social/a.png"}
-    status     = _make_status("112233")
-    status["media_attachments"] = [attachment]
+    status     = _make_status("112233") | {"media_attachments": [attachment]}
+
     calls = _install_fake_get(monkeypatch, [])
 
     bookmarks.save_attachments([status], attachments_dir)
@@ -539,8 +536,8 @@ def test_save_attachments_skips_attachment_without_url(tmp_path, monkeypatch):
     """
     attachments_dir = tmp_path / "att"
     attachment      = {"id": "1", "url": None}
-    status          = _make_status("112233")
-    status["media_attachments"] = [attachment]
+    status          = _make_status("112233") | {"media_attachments": [attachment]}
+
     calls = _install_fake_get(monkeypatch, [])
 
     bookmarks.save_attachments([status], attachments_dir)
@@ -563,8 +560,8 @@ def test_save_attachments_raises_on_http_error(tmp_path, monkeypatch):
     """
     attachments_dir = tmp_path / "att"
     attachment      = {"id": "1", "url": "https://files.example.social/a.png"}
-    status          = _make_status("112233")
-    status["media_attachments"] = [attachment]
+    status          = _make_status("112233") | {"media_attachments": [attachment]}
+
     failure = FakeResponse([], error = requests.HTTPError("404"))
     _install_fake_get(monkeypatch, [failure])
 
