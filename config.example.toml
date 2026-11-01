@@ -1,0 +1,3 @@
+instance_url = "https://example.social"
+access_token = "your-token-with-read:bookmarks-scope"
+output_dir   = "bookmarks"

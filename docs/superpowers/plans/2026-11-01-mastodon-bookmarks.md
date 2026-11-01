@@ -1,6 +1,6 @@
 # Mastodon Bookmarks to Markdown Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** A really simple script that fetches all Mastodon bookmarks for one account and writes each to its own markdown file with YAML front matter.
 
@@ -12,7 +12,7 @@
 
 **Git:** Do NOT commit. The user makes all commits themselves.
 
-**Status:**: Not started
+**Status:**: Done
 
 ---
 
@@ -37,24 +37,24 @@ Before writing code, load the codebase style skills: `python-imports`,
 **Files:**
 - Create: `pyproject.toml`, `uv.lock` (via uv), `.gitignore`, `config.example.toml`
 
-**Status:**: Not started
+**Status:**: Done
 
-- [ ] **Step 1: Initialise with uv**
+- [x] **Step 1: Initialise with uv**
 
 Run: `uv init --bare --name mastodon-bookmarks-to-markdown`
 (`--bare` creates only `pyproject.toml`: no sample `main.py`, no README, and no git init.)
 Confirm `requires-python` in `pyproject.toml` is `>=3.11`, and edit it if it isn't.
 
-- [ ] **Step 2: Add dependencies**
+- [x] **Step 2: Add dependencies**
 
 Run: `uv add requests` then `uv add --dev pytest`
 Expected: `pyproject.toml` lists `requests` in dependencies and `pytest` in the `dev` dependency group, and `uv.lock` exists.
 
-- [ ] **Step 3: Create `.gitignore`**
+- [x] **Step 3: Create `.gitignore`**
 
 Lines: `config.toml`, `bookmarks/`, `.venv/`, `__pycache__/`, `.pytest_cache/`.
 
-- [ ] **Step 4: Create `config.example.toml`**
+- [x] **Step 4: Create `config.example.toml`**
 
 ```toml
 instance_url = "https://example.social"
@@ -62,7 +62,7 @@ access_token = "your-token-with-read:bookmarks-scope"
 output_dir   = "bookmarks"
 ```
 
-- [ ] **Step 5: Verify pytest runs**
+- [x] **Step 5: Verify pytest runs**
 
 Run: `uv run pytest`
 Expected: "no tests ran" (exit code 5). That's fine at this stage.
@@ -74,25 +74,25 @@ Expected: "no tests ran" (exit code 5). That's fine at this stage.
 **Files:**
 - Create: `bookmarks.py`, `test_bookmarks.py`
 
-**Status:**: Not started
+**Status:**: Done
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `test_load_config`: write a small TOML string (all three keys) to
 `tmp_path / "config.toml"`, call `load_config(path)`, and assert the result
 equals the expected dict.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest test_bookmarks.py::test_load_config -v`
 Expected: FAIL (ImportError: `load_config` not defined).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
-  - [ ] `load_config(path) -> dict`
-  - [ ] Open the file in binary mode (`"rb"`, which `tomllib` requires) and return `tomllib.load(f)`.
+  - [x] `load_config(path) -> dict`
+  - [x] Open the file in binary mode (`"rb"`, which `tomllib` requires) and return `tomllib.load(f)`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest test_bookmarks.py::test_load_config -v`
 Expected: PASS
@@ -104,9 +104,9 @@ Expected: PASS
 **Files:**
 - Modify: `bookmarks.py`, `test_bookmarks.py`
 
-**Status:**: Not started
+**Status:**: Done
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 One small test per behaviour:
 - `test_html_to_text_single_paragraph`: `"<p>Hello</p>"` → `"Hello"`
@@ -115,21 +115,21 @@ One small test per behaviour:
 - `test_html_to_text_strips_tags`: `'<p>See <a href="https://x.y"><span>x.y</span></a></p>'` → `"See x.y"`
 - `test_html_to_text_unescapes_entities`: `"<p>A &amp; B &lt;3</p>"` → `"A & B <3"`
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest test_bookmarks.py -k html_to_text -v`
 Expected: FAIL (ImportError).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
-  - [ ] `html_to_text(html: str) -> str`
-  - [ ] Use `re.sub` to replace `<br>` variants (`<br\s*/?>`) with `"\n"`.
-  - [ ] Replace `</p>\s*<p>` with `"\n\n"`.
-  - [ ] Strip any remaining tags with `<[^>]+>`.
-  - [ ] Unescape with `html.unescape` and return the `.strip()`ped result.
+  - [x] `html_to_text(html: str) -> str`
+  - [x] Use `re.sub` to replace `<br>` variants (`<br\s*/?>`) with `"\n"`.
+  - [x] Replace `</p>\s*<p>` with `"\n\n"`.
+  - [x] Strip any remaining tags with `<[^>]+>`.
+  - [x] Unescape with `html.unescape` and return the `.strip()`ped result.
   - Note: entities must be unescaped *after* the tags are stripped. Otherwise `&lt;3` would turn into `<3` and could be mistaken for a tag.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest test_bookmarks.py -k html_to_text -v`
 Expected: 5 PASS
@@ -141,9 +141,9 @@ Expected: 5 PASS
 **Files:**
 - Modify: `bookmarks.py`, `test_bookmarks.py`
 
-**Status:**: Not started
+**Status:**: Done
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `test_status_to_markdown`: build a minimal status dict:
 
@@ -171,17 +171,17 @@ Hello & welcome
 
 including one trailing newline at the end.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest test_bookmarks.py::test_status_to_markdown -v`
 Expected: FAIL (ImportError).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
-  - [ ] `status_to_markdown(status: dict) -> str`
-  - [ ] Build the string from the front matter lines, a blank line, `html_to_text(status["content"])` and a trailing newline. The author is `"@" + status["account"]["acct"]`, wrapped in double quotes because YAML would treat a leading `@` as reserved.
+  - [x] `status_to_markdown(status: dict) -> str`
+  - [x] Build the string from the front matter lines, a blank line, `html_to_text(status["content"])` and a trailing newline. The author is `"@" + status["account"]["acct"]`, wrapped in double quotes because YAML would treat a leading `@` as reserved.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest test_bookmarks.py::test_status_to_markdown -v`
 Expected: PASS
@@ -193,9 +193,9 @@ Expected: PASS
 **Files:**
 - Modify: `bookmarks.py`, `test_bookmarks.py`
 
-**Status:**: Not started
+**Status:**: Done
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 - `test_save_bookmarks_writes_one_file_per_status`: two status dicts (ids
   `"1"` and `"2"`, otherwise shaped like the one in Task 4). Output dir is
@@ -204,18 +204,18 @@ Expected: PASS
 - `test_save_bookmarks_overwrites_existing`: create `out/1.md` with the text
   `"old"`, save status id `"1"`, and assert the contents have been replaced.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest test_bookmarks.py -k save_bookmarks -v`
 Expected: FAIL (ImportError).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
-  - [ ] `save_bookmarks(statuses: list[dict], output_dir) -> None`
-  - [ ] `Path(output_dir).mkdir(parents=True, exist_ok=True)`
-  - [ ] For each status, call `(dir / f"{status['id']}.md").write_text(status_to_markdown(status), encoding="utf-8")`
+  - [x] `save_bookmarks(statuses: list[dict], output_dir) -> None`
+  - [x] `Path(output_dir).mkdir(parents=True, exist_ok=True)`
+  - [x] For each status, call `(dir / f"{status['id']}.md").write_text(status_to_markdown(status), encoding="utf-8")`
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest test_bookmarks.py -k save_bookmarks -v`
 Expected: 2 PASS
@@ -227,7 +227,7 @@ Expected: 2 PASS
 **Files:**
 - Modify: `bookmarks.py`, `test_bookmarks.py`
 
-**Status:**: Not started
+**Status:**: Done
 
 Background: `GET {instance_url}/api/v1/bookmarks` returns a JSON list of
 statuses. When there are more pages, the response has a `Link` header with a
@@ -240,7 +240,7 @@ headers and returns `FakeResponse` objects from a queue. `FakeResponse` is a
 small class in the test file with a `json()` method, a `links` dict and a
 no-op `raise_for_status()`. Don't use a mocking library.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 - `test_fetch_bookmarks_sends_token_and_returns_statuses`: one page with two
   statuses and empty `links`. Assert that the result is both statuses, that
@@ -255,19 +255,19 @@ no-op `raise_for_status()`. Don't use a mocking library.
   `requests.HTTPError("401")` and assert that `fetch_bookmarks` raises
   `requests.HTTPError`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest test_bookmarks.py -k fetch_bookmarks -v`
 Expected: FAIL (ImportError).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
-  - [ ] `fetch_bookmarks(instance_url: str, token: str) -> list[dict]`
-  - [ ] Build `headers = {"Authorization": f"Bearer {token}"}` and set the starting URL to `instance_url.rstrip("/") + "/api/v1/bookmarks"`.
-  - [ ] Loop while there is a URL: `requests.get(url, headers=headers)`, then `raise_for_status()`, then extend the results with `response.json()`, then set `url = response.links.get("next", {}).get("url")`.
-  - [ ] Return the results.
+  - [x] `fetch_bookmarks(instance_url: str, token: str) -> list[dict]`
+  - [x] Build `headers = {"Authorization": f"Bearer {token}"}` and set the starting URL to `instance_url.rstrip("/") + "/api/v1/bookmarks"`.
+  - [x] Loop while there is a URL: `requests.get(url, headers=headers)`, then `raise_for_status()`, then extend the results with `response.json()`, then set `url = response.links.get("next", {}).get("url")`.
+  - [x] Return the results.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest test_bookmarks.py -k fetch_bookmarks -v`
 Expected: 3 PASS
@@ -279,25 +279,25 @@ Expected: 3 PASS
 **Files:**
 - Modify: `bookmarks.py`
 
-**Status:**: Not started
+**Status:**: Done
 
 `main` is just glue code, so per the spec it has no unit test of its own.
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
 
-  - [ ] `main() -> None`: `config = load_config("config.toml")`, then call `fetch_bookmarks(config["instance_url"], config["access_token"])`, pass the result to `save_bookmarks(statuses, config["output_dir"])`, and print how many files were written.
-  - [ ] Add `if __name__ == "__main__": main()` at the bottom of the file.
+  - [x] `main() -> None`: `config = load_config("config.toml")`, then call `fetch_bookmarks(config["instance_url"], config["access_token"])`, pass the result to `save_bookmarks(statuses, config["output_dir"])`, and print how many files were written.
+  - [x] Add `if __name__ == "__main__": main()` at the bottom of the file.
 
-- [ ] **Step 2: Run the full suite**
+- [x] **Step 2: Run the full suite**
 
 Run: `uv run pytest -v`
 Expected: all 12 tests pass.
 
-- [ ] **Step 3: Smoke test (manual, by the user)**
+- [x] **Step 3: Smoke test (manual, by the user)**
 
 Copy `config.example.toml` to `config.toml`, fill in the real values, then run
 `uv run python bookmarks.py`. Expected: `bookmarks/<id>.md` files appear.
 
-- [ ] **Step 4: Hand over to the user**
+- [x] **Step 4: Hand over to the user**
 
 Tell the user which files are ready. Do not commit anything.
